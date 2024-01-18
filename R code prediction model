@@ -1,0 +1,66 @@
+rm(list = ls())
+library(kernlab)
+
+# Correct the variable assignment to read the file into 'data'
+data <- read.table("C:/Users/Other users/Desktop/Credit_Card/credit_card_data-headers.txt", header = TRUE)
+
+# Display the first few and last few rows of the data
+head(data)
+tail(data)
+
+# Create a matrix 'data_matrix' from the data frame 'data'
+data_matrix <- as.matrix(data)
+
+# Train the SVM model
+model <- ksvm(
+  data_matrix[, 1:10], data_matrix[, 11],
+  type="C-svc", kernel="vanilladot", C=100, scaled=TRUE
+)
+
+# Calculate coefficients 'a'
+a <- colSums(model@xmatrix[[1]] * model@coef[[1]])
+
+# Display 'a'
+a
+
+pred <- predict(model,data[,1:10])
+pred
+
+sum(pred == data[,11]) / nrow(data)
+
+#Splinedot Model 
+splinedot_model <- ksvm(as.matrix(data[, 1:10]), as.factor(data[, 11]), C = 100, 
+                             scaled = TRUE, kernel = "splinedot", type = "C-svc")
+
+splinedot_coe1 <- colSums(splinedot_model@xmatrix[[1]] * splinedot_model@coef[[1]])
+splinedot_predict1 <- predict(splinedot_model, data[, 1:10])
+accuracy <- sum(splinedot_predict1 == data[, 11]) / nrow(data) * 100
+accuracy <- round(accuracy, 2)
+
+#accuracy of the Splinedot model
+print(paste("Splinedot Accuracy:", accuracy))
+
+
+library(kknn)
+
+m_acc <- 0.0
+m_k <- 1
+
+for (k in seq(1, 20)) {
+  correct <- 0
+  
+  for (i in 1:nrow(data)) {
+    knn <- kknn(R1 ~ ., data[-i, ], data[i, ], k = k, kernel = "optimal", distance = 2, scale = TRUE)
+    correct <- correct + (round(fitted(knn)) == data[i, 11])
+  }
+  
+  acc <- correct / nrow(data)
+  
+  if (acc > m_acc) {
+    m_acc <- acc
+    m_k <- k
+  }
+}
+
+print("Best score: ")
+print(m_acc)
